@@ -2,7 +2,7 @@
 
 The marketing site for Rutta, fleet and delivery management for distributors in Kosovo and the Balkans.
 
-**Live:** https://viganm.github.io/rutta-website/ (Albanian) · https://viganm.github.io/rutta-website/en/ (English)
+**Live:** https://ruttadispatching.com (Albanian) · https://ruttadispatching.com/en/ (English)
 
 The page tells one delivery day on a live map of Kosovo: real terrain contours, rivers, roads and Prishtinë's streets drawn on canvas, with vans driving demo routes along real roads. Below it, the driver app, offline sync, pin correction, the Today board, reports and plans are rebuilt in HTML from the Rutta apps. Names, shops and numbers are demo data.
 
@@ -18,7 +18,7 @@ pnpm install
 pnpm dev
 ```
 
-Then open http://localhost:4321/rutta-website/.
+Then open http://localhost:4321.
 
 | Command          | What it does                                     |
 | ---------------- | ------------------------------------------------ |
@@ -46,4 +46,6 @@ Map data © OpenStreetMap contributors (ODbL).
 
 ## Deploying
 
-Every push to `main` builds the site and publishes it to GitHub Pages (`.github/workflows/deploy.yml`). The site lives under `/rutta-website/` (`base` in `astro.config.mjs`); if it moves to its own domain, set `site` and `base` there and `SITE_ORIGIN` in `src/site.config.ts`.
+Every push to `main` builds the site and publishes it to GitHub Pages (`.github/workflows/deploy.yml`). The custom domain is set in the repository's Pages settings, not in a `CNAME` file (deploys from Actions ignore one). If the domain changes, update it there, `site` in `astro.config.mjs` and `SITE_ORIGIN` in `src/site.config.ts`.
+
+DNS for `ruttadispatching.com` is on Cloudflare: four `A` and four `AAAA` records on the apex point at GitHub Pages, and `www` is a `CNAME` to `viganm.github.io`, all DNS only (not proxied). The `MX`, SPF and DMARC records belong to the domain's email and are separate.
