@@ -1,0 +1,174 @@
+---
+/**
+ * The four plans by fleet size, each with its yard drawn from above: the
+ * number of vans the plan allows, parked. No prices exist yet; every plan
+ * leads to the demo form with the plan filled in.
+ */
+import { copy, type Lang } from '../i18n';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = copy[lang].plans;
+const num = (n: number) => n.toLocaleString(lang === 'sq' ? 'sq-AL' : 'en-GB');
+
+function yard(count: number) {
+  const cols = count > 20 ? 20 : 10;
+  const w = 240 / cols;
+  const h = count > 20 ? 8.4 : 14;
+  const vans = Array.from({ length: count }, (_, i) => ({
+    x: (i % cols) * w + w * 0.14,
+    y: Math.floor(i / cols) * h + h * 0.18,
+    w: w * 0.72,
+    h: h * 0.62,
+  }));
+  return { vans, height: Math.max(h * Math.ceil(count / cols), 28) };
+}
+---
+
+<section class="plans paper section" id="plans" aria-labelledby="plans-title" data-plans>
+  <div class="wrap">
+    <div class="section__head plans__head">
+      <h2 class="h2" id="plans-title">
+        {t.title}
+      </h2>
+      <p class="lead">{t.body}</p>
+    </div>
+    <ol class="plans__list">
+      {t.list.map((plan, i) => {
+        const y = yard(plan.vehicles);
+        const last = i === t.list.length - 1;
+        return (
+          <li class="plan">
+            <h3 class="plan__name">{plan.name}</h3>
+            <svg class="plan__yard" viewBox={`0 0 240 ${y.height}`} aria-hidden="true" data-yard>
+              {y.vans.map((v) => (
+                <rect
+                  x={v.x.toFixed(1)}
+                  y={v.y.toFixed(1)}
+                  width={v.w.toFixed(1)}
+                  height={v.h.toFixed(1)}
+                  rx={Math.min(2, v.h / 3).toFixed(1)}
+                />
+              ))}
+            </svg>
+            <p class="plan__figure">
+              {last && <span class="plan__upto">{t.upTo}</span>}
+              <b class="num">{num(plan.vehicles)}</b>
+              <span>{t.vehicles}</span>
+            </p>
+            <p class="plan__drivers">
+              <b class="num">{num(plan.drivers)}</b> {t.drivers}
+            </p>
+            <p class="plan__note">{plan.note}</p>
+            <a class="btn btn--ghost btn--small plan__cta" href="#demo" data-plan={plan.name}>
+              {t.contact}
+            </a>
+          </li>
+        );
+      })}
+    </ol>
+  </div>
+</section>
+
+<style>
+  .plans__head {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: end;
+    gap: 24px 64px;
+  }
+  .plans__list {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    border-top: 1px solid var(--line-strong);
+  }
+  .plan {
+    display: grid;
+    grid-template-rows: auto 1fr auto auto auto auto;
+    gap: 10px;
+    padding: 28px 28px 32px 0;
+  }
+  .plan + .plan {
+    padding-left: 28px;
+    border-left: 1px solid var(--line);
+  }
+  .plan__name {
+    font-size: 1.125rem;
+    font-weight: 650;
+  }
+  .plan__yard {
+    align-self: end;
+    width: 100%;
+    height: auto;
+    margin-block: 18px 8px;
+    fill: var(--primary);
+  }
+  .plan__figure {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    color: var(--text-2);
+    font-weight: 560;
+  }
+  .plan__figure b {
+    font-size: clamp(2.75rem, 2rem + 2vw, 4rem);
+    line-height: 1;
+    font-weight: 720;
+    letter-spacing: -0.04em;
+    color: var(--text);
+    /* Proportional at display size, still the sharpened numeral. */
+    font-variant-numeric: normal;
+    font-variation-settings: 'SHRP' 100;
+  }
+  .plan__upto {
+    align-self: flex-start;
+    margin-top: 6px;
+    font-size: 0.8125rem;
+    color: var(--text-3);
+  }
+  .plan__drivers {
+    color: var(--text-2);
+  }
+  .plan__drivers b {
+    font-weight: 650;
+    color: var(--text);
+  }
+  .plan__note {
+    min-height: 3em;
+    color: var(--text-3);
+    font-size: 0.9375rem;
+  }
+  .plan__cta {
+    justify-self: start;
+    margin-top: 8px;
+  }
+  @media (max-width: 1099px) {
+    .plans__list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .plan:nth-child(3) {
+      padding-left: 0;
+      border-left: 0;
+    }
+    .plan:nth-child(n + 3) {
+      border-top: 1px solid var(--line);
+    }
+  }
+  @media (max-width: 719px) {
+    .plans__head {
+      grid-template-columns: 1fr;
+    }
+    .plans__list {
+      grid-template-columns: 1fr;
+    }
+    .plan,
+    .plan + .plan {
+      padding: 24px 0 28px;
+      border-left: 0;
+    }
+    .plan + .plan {
+      border-top: 1px solid var(--line);
+    }
+  }
+</style>

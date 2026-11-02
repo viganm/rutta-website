@@ -1,0 +1,347 @@
+---
+/**
+ * No signal: Ermal's van climbs to Dragash, delivers inside a dead zone, and
+ * the outbox empties in order once the phone finds signal again.
+ * src/scripts/signal.ts runs it on the paper map.
+ */
+import { copy, fill, type Lang } from '../i18n';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = copy[lang].signal;
+---
+
+<section class="signal paper section" aria-labelledby="signal-title" data-signal>
+  <div class="wrap signal__head">
+    <h2 class="h2" id="signal-title">
+      {t.title}
+    </h2>
+    <p class="lead">{t.body}</p>
+  </div>
+
+  <div class="signal__map">
+    <canvas data-map aria-hidden="true"></canvas>
+    <div class="map-inst signal__inst" aria-hidden="true">
+      <span class="num" data-inst-coords></span>
+      <span class="map-inst__scale">
+        <i data-inst-bar></i>
+        <span class="num" data-inst-scale></span>
+      </span>
+    </div>
+    <span class="signal__tag" data-tag aria-hidden="true">
+      <svg class="signal__bars" viewBox="0 0 16 12" data-bars>
+        <rect x="0" y="8" width="3" height="4" rx="1"></rect>
+        <rect x="4.3" y="5.5" width="3" height="6.5" rx="1"></rect>
+        <rect x="8.6" y="3" width="3" height="9" rx="1"></rect>
+        <rect x="12.9" y="0" width="3" height="12" rx="1"></rect>
+      </svg>
+      <span data-tag-text>{t.synced}</span>
+    </span>
+
+    <div class="wrap signal__cards">
+      <div class="signal__card" aria-hidden="true">
+        <p class="signal__card-title">Rutta Driver · R5</p>
+        <span class="signal__pill" data-pill>
+          {t.synced}
+        </span>
+        <p class="signal__all" data-all>
+          {t.allSent}
+        </p>
+        <ol class="signal__queue" data-queue>
+          {t.events.map((e) => (
+            <li hidden>
+              <span class="signal__dot" />
+              <span>
+                <b>{e}</b>
+                <span class="signal__stop">{fill(t.stop, { n: 9, name: 'Supermarket Rina' })}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+      </div>
+      <div class="signal__card signal__card--dispatch" aria-hidden="true">
+        <p class="signal__card-title">{t.dispatch}</p>
+        <p class="signal__waiting" data-waiting>
+          {t.waiting}
+        </p>
+        <ol class="signal__received" data-received>
+          {t.events.map((e, i) => (
+            <li hidden>
+              <span class="num">{i + 1}</span>
+              <b>{e}</b>
+              <svg viewBox="0 0 16 16">
+                <path
+                  d="M3.5 8.5l3 3 6-7"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </li>
+          ))}
+        </ol>
+        <p class="signal__note" data-note>
+          {t.received}
+        </p>
+      </div>
+    </div>
+  </div>
+  <template
+    data-copy
+    set:html={JSON.stringify({
+      offline: t.offline,
+      sending: t.sending,
+      synced: t.synced,
+      deadZone: t.deadZone,
+    })}
+  />
+</section>
+
+<style>
+  .signal {
+    padding-bottom: 0;
+    overflow: hidden;
+  }
+  .signal__head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 24px 64px;
+    align-items: end;
+    margin-bottom: 8px;
+  }
+  .signal__head .lead {
+    max-width: 30em;
+  }
+  .signal__map {
+    position: relative;
+    height: clamp(520px, 52vw, 680px);
+  }
+  .signal__map canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+  }
+  .signal__map::before,
+  .signal__map::after {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    left: 0;
+    right: 0;
+    height: 90px;
+    pointer-events: none;
+  }
+  .signal__map::before {
+    top: 0;
+    background: linear-gradient(var(--bg), transparent);
+  }
+  .signal__map::after {
+    bottom: 0;
+    background: linear-gradient(transparent, var(--bg));
+  }
+
+  .signal__tag {
+    position: absolute;
+    z-index: 2;
+    left: 0;
+    top: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 26px;
+    padding: 0 10px;
+    border-radius: 99px;
+    background: var(--surface);
+    box-shadow:
+      0 0 0 1px var(--line) inset,
+      0 6px 16px -6px rgb(18 26 23 / 0.35);
+    font-size: 0.75rem;
+    font-weight: 620;
+    white-space: nowrap;
+    transform: translate(-50%, -100%);
+    will-change: transform;
+  }
+  .signal__bars {
+    width: 15px;
+    height: 11px;
+    fill: var(--primary);
+  }
+  .signal__bars rect {
+    transition: fill 0.2s;
+  }
+  .signal__tag[data-offline] .signal__bars rect {
+    fill: var(--line-strong);
+  }
+  .signal__tag[data-offline] {
+    color: var(--st-failed-on-subtle);
+  }
+
+  .signal__cards {
+    position: absolute;
+    z-index: 2;
+    left: 0;
+    right: 0;
+    bottom: 56px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    pointer-events: none;
+  }
+  .signal__card {
+    width: min(300px, 46%);
+    padding: 16px;
+    border-radius: 16px;
+    background: var(--surface);
+    box-shadow:
+      0 0 0 1px var(--line) inset,
+      0 20px 40px -20px rgb(18 26 23 / 0.35);
+    font-size: 0.8125rem;
+  }
+  .signal__card-title {
+    margin-bottom: 10px;
+    font-weight: 650;
+    color: var(--text-3);
+  }
+  .signal__pill {
+    display: inline-flex;
+    align-items: center;
+    height: 26px;
+    padding: 0 10px;
+    border-radius: 99px;
+    background: var(--st-delivered-subtle);
+    color: var(--st-delivered-on-subtle);
+    font-weight: 620;
+    transition:
+      background-color 0.25s,
+      color 0.25s;
+  }
+  .signal__pill[data-state='offline'] {
+    background: var(--st-warning-subtle);
+    color: var(--st-warning-on-subtle);
+  }
+  .signal__pill[data-state='sending'] {
+    background: var(--st-arrived-subtle);
+    color: var(--st-arrived-on-subtle);
+  }
+  .signal__queue,
+  .signal__received {
+    display: grid;
+    gap: 6px;
+    align-content: start;
+  }
+  .signal__queue:has(li:not([hidden])),
+  .signal__received:has(li:not([hidden])) {
+    margin-top: 12px;
+  }
+  .signal__all,
+  .signal__waiting {
+    margin-top: 10px;
+    color: var(--text-3);
+  }
+  .signal__all[hidden],
+  .signal__waiting[hidden],
+  .signal__queue li[hidden],
+  .signal__received li[hidden] {
+    display: none;
+  }
+  .signal__inst {
+    top: 24px;
+    right: var(--gutter);
+  }
+  .signal__queue li {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: var(--sunken);
+    opacity: 0;
+  }
+  .signal__queue b,
+  .signal__received b {
+    display: block;
+    font-weight: 620;
+  }
+  .signal__stop {
+    color: var(--text-3);
+  }
+  .signal__dot {
+    width: 8px;
+    height: 8px;
+    margin-top: 5px;
+    border-radius: 50%;
+    background: var(--st-warning);
+    flex: none;
+  }
+  .signal__received li {
+    display: grid;
+    grid-template-columns: 22px 1fr 16px;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 10px;
+    border-radius: 10px;
+    background: var(--sunken);
+    opacity: 0;
+  }
+  .signal__received .num {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--surface);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+  .signal__received svg {
+    width: 16px;
+    height: 16px;
+    color: var(--primary);
+  }
+  .signal__note {
+    margin-top: 10px;
+    font-weight: 600;
+    color: var(--primary);
+    opacity: 0;
+  }
+
+  @media (max-width: 899px) {
+    .signal {
+      padding-bottom: 72px;
+    }
+    .signal__head {
+      grid-template-columns: 1fr;
+    }
+    .signal__map {
+      height: auto;
+      display: grid;
+    }
+    .signal__map canvas {
+      position: relative;
+      height: 440px;
+    }
+    .signal__map::after {
+      display: none;
+    }
+    .signal__cards {
+      position: relative;
+      bottom: auto;
+      align-items: stretch;
+      margin-top: -24px;
+    }
+    .signal__card {
+      width: 50%;
+      padding: 12px;
+    }
+    .signal__stop {
+      display: none;
+    }
+  }
+</style>

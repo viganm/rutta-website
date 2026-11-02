@@ -1,0 +1,105 @@
+---
+import { copy, homePath, type Lang } from '../i18n';
+import Logo from './Logo.astro';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = copy[lang].footer;
+---
+
+<footer class="footer night">
+  <div class="wrap footer__inner">
+    <div class="footer__brand">
+      <Logo />
+      <p>{t.tagline}</p>
+    </div>
+    <ul class="footer__apps">
+      {t.apps.map((a) => (
+        <li>{a}</li>
+      ))}
+    </ul>
+    <div class="footer__lang">
+      <a href={homePath('sq')} lang="sq" aria-current={lang === 'sq' ? 'true' : undefined}>
+        Shqip
+      </a>
+      <a href={homePath('en')} lang="en" aria-current={lang === 'en' ? 'true' : undefined}>
+        English
+      </a>
+    </div>
+    <div class="footer__fine">
+      <p>{t.demoData}</p>
+      <p>{t.attribution}</p>
+      <p>{t.rights}</p>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    padding-block: 72px 40px;
+  }
+  .footer__inner {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: 40px;
+  }
+  .footer__brand {
+    display: grid;
+    gap: 16px;
+    align-content: start;
+  }
+  .footer__brand p {
+    max-width: 30em;
+    color: var(--text-2);
+  }
+  .footer__apps {
+    display: grid;
+    gap: 8px;
+    color: var(--text-2);
+    font-weight: 520;
+  }
+  .footer__lang {
+    display: grid;
+    gap: 8px;
+    align-content: start;
+  }
+  .footer__lang a {
+    justify-self: start;
+    color: var(--text-2);
+    text-decoration: none;
+  }
+  .footer__lang a[aria-current] {
+    color: var(--text);
+    font-weight: 600;
+  }
+  .footer__lang a:hover {
+    color: var(--text);
+    text-decoration: underline;
+  }
+  .footer__fine {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 32px;
+    padding-top: 28px;
+    border-top: 1px solid var(--line);
+    font-size: 0.8125rem;
+    color: var(--text-3);
+  }
+  .footer__fine p:last-child {
+    margin-left: auto;
+  }
+  @media (max-width: 719px) {
+    .footer__inner {
+      grid-template-columns: 1fr 1fr;
+    }
+    .footer__brand {
+      grid-column: 1 / -1;
+    }
+    .footer__fine p:last-child {
+      margin-left: 0;
+    }
+  }
+</style>

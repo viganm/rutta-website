@@ -1,0 +1,48 @@
+---
+/** Back on the wall screen: the full Today board, rows reranking in place. */
+import { copy, type Lang } from '../i18n';
+import Board from './Board.astro';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = copy[lang].today;
+---
+
+<section class="today night section" id="today" aria-labelledby="today-title" data-today>
+  <div class="wrap today__grid">
+    <div class="today__copy">
+      <h2 class="h2" id="today-title">
+        {t.title}
+      </h2>
+      <p class="lead">{t.body}</p>
+    </div>
+    <div class="today__board">
+      <Board lang={lang} variant="full" />
+    </div>
+  </div>
+</section>
+
+<style>
+  .today__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+    gap: clamp(40px, 5vw, 88px);
+    align-items: start;
+  }
+  .today__copy {
+    position: sticky;
+    top: calc(var(--nav-h) + 48px);
+    display: grid;
+    gap: 24px;
+  }
+  @media (max-width: 1099px) {
+    .today__grid {
+      grid-template-columns: 1fr;
+    }
+    .today__copy {
+      position: static;
+    }
+  }
+</style>

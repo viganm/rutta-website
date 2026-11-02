@@ -1,0 +1,344 @@
+---
+/**
+ * Rutta Dispatch's Today board, rebuilt from the app: the same routes, words
+ * and states as the map beside it. Server-rendered at the demo's opening
+ * time; src/scripts/board.ts keeps it running.
+ */
+import { copy, fill, type Lang } from '../i18n';
+import { boardAt } from '../scripts/board-model';
+import { START } from '../scripts/sim';
+
+interface Props {
+  lang: Lang;
+  variant: 'compact' | 'full';
+}
+const { lang, variant } = Astro.props;
+const c = copy[lang].board;
+const view = boardAt(START, c);
+const rows = variant === 'full' ? [...view.rows].sort((a, b) => a.weight - b.weight) : view.rows;
+const icons = {
+  moving: 'M3 11l18-8-8 18-2-8z',
+  late: 'M12 7v5l3 2M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18z',
+  at_stop:
+    'M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z',
+  no_signal:
+    'M2 2l20 20M8.5 16.4a5 5 0 0 1 7 0M5 12.9a10 10 0 0 1 5.2-2.8M19 12.9a10 10 0 0 0-2-1.5M12 20h.01',
+  not_started: 'M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18zM12 7v5l3 2',
+  finished: 'M20 6L9 17l-5-5',
+};
+---
+
+<div class:list={['board', `board--${variant}`]} data-board={variant}>
+  <header class="board__head">
+    <div class="board__title">
+      <h3>{c.title}</h3>
+      <span class="board__live">
+        <span class="live-dot"></span>
+        {c.live}
+      </span>
+    </div>
+    <span class="board__clock num" data-clock>
+      {view.clock}
+    </span>
+  </header>
+
+  <div class="board__summary">
+    <div class="board__summary-text">
+      <span class="meta">{c.stopsDone}</span>
+      <strong class="num" data-total>
+        {fill(c.ofTotal, { done: view.done, total: view.total })}
+      </strong>
+    </div>
+    <div class="bar">
+      <i data-total-bar style={`--p:${(view.done / view.total).toFixed(3)}`}></i>
+    </div>
+  </div>
+
+  <section class="board__attention" aria-live="polite">
+    <h4>{c.attention}</h4>
+    <ul data-attention>
+      {view.attention.slice(0, variant === 'full' ? 4 : 2).map((a) => (
+        <li data-key={a.key} data-kind={a.kind} style={`--c: var(--r${a.slot})`}>
+          {a.text}
+        </li>
+      ))}
+    </ul>
+    <p class="board__clear" data-clear hidden={view.attention.length > 0}>
+      {c.allClear}
+    </p>
+  </section>
+
+  <ol class="board__rows" data-rows>
+    {rows.map((r) => (
+      <li class="row" data-slot={r.slot} data-tone={r.tone} style={`--c: var(--r${r.slot})`}>
+        <div class="row__top">
+          <span class="route-badge">{r.label}</span>
+          <span class="row__who">
+            <span class="row__driver">{r.driver}</span>
+            {variant === 'full' && (
+              <span class="row__route">
+                <span class="row__route-name">{r.name}</span>
+                <span class="num row__plate">{r.plate}</span>
+              </span>
+            )}
+          </span>
+          <span class="row__count num" data-count>
+            {r.done}/{r.total}
+          </span>
+        </div>
+        <div class="bar">
+          <i data-bar style={`--p:${r.ratio.toFixed(3)}`} />
+        </div>
+        <div class="row__bottom">
+          <span class="pill" data-tone={r.tone} data-pill>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d={icons[r.tone]} />
+            </svg>
+            <span data-status>{r.status}</span>
+          </span>
+          <span class="row__next">
+            <span class="row__stop" data-next>
+              {r.next}
+            </span>
+            <span class="row__when num" data-when data-late={r.late ? '' : undefined}>
+              {r.when}
+            </span>
+          </span>
+        </div>
+      </li>
+    ))}
+  </ol>
+  <template data-icons set:html={JSON.stringify(icons)} />
+</div>
+
+<style>
+  .board {
+    --pad: 16px;
+    display: grid;
+    gap: 14px;
+    padding: var(--pad);
+    border-radius: var(--radius-lg);
+    background: color-mix(in oklab, var(--surface) 94%, transparent);
+    box-shadow:
+      0 0 0 1px var(--line) inset,
+      0 24px 60px -24px rgb(0 0 0 / 0.6);
+    color: var(--text);
+    font-size: 0.875rem;
+  }
+  .board__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .board__title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .board__title h3 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .board__live {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--primary);
+  }
+  .board__clock {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-2);
+  }
+  .board__summary {
+    display: grid;
+    gap: 8px;
+  }
+  .board__summary-text {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .board__summary strong {
+    font-size: 0.9375rem;
+    font-weight: 650;
+  }
+  .board__summary .bar {
+    height: 6px;
+  }
+
+  .board__attention h4 {
+    margin-bottom: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-3);
+  }
+  .board__attention ul {
+    display: grid;
+    gap: 6px;
+  }
+  .board__attention :global(li) {
+    position: relative;
+    padding: 8px 10px 8px 30px;
+    border-radius: 8px;
+    font-size: 0.8125rem;
+    line-height: 1.35;
+    background: var(--st-warning-subtle);
+    color: var(--st-warning-on-subtle);
+  }
+  .board__attention :global(li[data-kind='failed']),
+  .board__attention :global(li[data-kind='no_signal']) {
+    background: var(--st-failed-subtle);
+    color: var(--st-failed-on-subtle);
+  }
+  .board__attention :global(li)::before {
+    content: '';
+    position: absolute;
+    left: 11px;
+    top: 13px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--c);
+  }
+  .board__attention :global(li.is-new) {
+    animation: arrive 1.6s var(--ease-out);
+  }
+  @keyframes arrive {
+    0% {
+      box-shadow: 0 0 0 0 color-mix(in oklab, currentColor 55%, transparent);
+      transform: translateY(-4px);
+      opacity: 0;
+    }
+    25% {
+      transform: none;
+      opacity: 1;
+    }
+    100% {
+      box-shadow: 0 0 0 10px transparent;
+    }
+  }
+  .board__clear {
+    font-size: 0.8125rem;
+    color: var(--text-3);
+  }
+
+  .board__rows {
+    display: grid;
+  }
+  .row {
+    display: grid;
+    gap: 7px;
+    padding: 11px 6px 12px;
+    margin-inline: -6px;
+    border-radius: 10px;
+    border-top: 1px solid var(--line);
+    transition: background-color 0.16s var(--ease-out);
+    cursor: default;
+  }
+  .row:global(.is-focus) {
+    background: color-mix(in oklab, var(--c) 10%, transparent);
+  }
+  .row__top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .row__who {
+    display: grid;
+    flex: 1;
+    min-width: 0;
+  }
+  .row__driver {
+    font-weight: 560;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .row__route {
+    display: flex;
+    gap: 8px;
+    min-width: 0;
+    font-size: 0.8125rem;
+    color: var(--text-3);
+    white-space: nowrap;
+  }
+  .row__route-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .row__plate {
+    flex: none;
+  }
+  .row__count {
+    font-weight: 650;
+    color: var(--text-2);
+  }
+  .row .bar {
+    height: 4px;
+  }
+  .row__bottom {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  /* The shop name gives way; the due time never does. */
+  .row__next {
+    display: flex;
+    gap: 6px;
+    min-width: 0;
+    font-size: 0.8125rem;
+    color: var(--text-3);
+    white-space: nowrap;
+  }
+  .row__stop {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .row__when {
+    flex: none;
+  }
+  .row__when[data-late] {
+    color: var(--st-failed);
+    font-weight: 560;
+  }
+
+  /* The full board in the Today section: a wider, table-like grid. */
+  .board--full {
+    --pad: clamp(16px, 2.4vw, 28px);
+    gap: 20px;
+    font-size: 0.9375rem;
+  }
+  .board--full .board__title h3 {
+    font-size: 1.375rem;
+  }
+  @media (min-width: 900px) {
+    .board--full .row {
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.55fr) minmax(0, 1.6fr);
+      align-items: center;
+      column-gap: 24px;
+      padding-block: 14px;
+    }
+    .board--full .row .bar {
+      order: 2;
+    }
+    .board--full .row__bottom {
+      order: 3;
+    }
+  }
+</style>

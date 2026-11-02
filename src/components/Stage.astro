@@ -1,0 +1,802 @@
+---
+/**
+ * The wall screen: a sticky night map with the hero over it, then four steps
+ * of the day that scroll over the same map while the camera flies into one
+ * route. src/scripts/stage.ts drives it.
+ */
+import { copy, fill, type Lang } from '../i18n';
+import { routes } from '../scripts/sim';
+import Board from './Board.astro';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = copy[lang];
+const s = t.day.steps;
+const r1 = routes[0]!.data;
+const builder = [0, 1, 2].map((i) => {
+  const r = routes[i]!.data;
+  // Demo loads, in the shape of the seed: R2 a little over its weight.
+  const loads = [
+    { kg: 601, kgMax: 1400, pal: 3.5, palMax: 4 },
+    { kg: 1371, kgMax: 1300, pal: 3.5, palMax: 4 },
+    { kg: 3120, kgMax: 4200, pal: 6, palMax: 8 },
+  ][i]!;
+  return { slot: i, name: r.name, driver: r.driver, stops: r.stops.length, km: r.km, ...loads };
+});
+const num = (n: number) => n.toLocaleString(lang === 'sq' ? 'sq-AL' : 'en-GB');
+---
+
+<section class="stage night" data-stage aria-label={t.day.title}>
+  <div class="stage__sticky">
+    <canvas class="stage__map" data-map role="img" aria-label={t.hero.mapLabel}></canvas>
+    <div class="stage__scrim" aria-hidden="true"></div>
+
+    <div class="stage__board" data-hero-board>
+      <Board lang={lang} variant="compact" />
+    </div>
+
+    <div class="stage__instruments" aria-hidden="true" data-instruments>
+      <span class="inst inst--demo">{t.instruments.demo}</span>
+      <span class="inst inst--clock num" data-inst-clock>
+        10:30
+      </span>
+      <span class="inst inst--coords num" data-inst-coords>
+        42.642° N · 21.118° E
+      </span>
+      <span class="inst inst--scale">
+        <span class="inst__bar" data-inst-bar></span>
+        <span class="num" data-inst-scale>
+          {t.instruments.scale}
+        </span>
+      </span>
+      <span class="inst inst--lapse">{t.instruments.timelapse}</span>
+    </div>
+  </div>
+
+  <div class="stage__flow">
+    <header class="hero" data-step="hero">
+      <div class="wrap hero__inner">
+        <div class="hero__copy">
+          <h1 class="display hero__title" data-hero-title>
+            {t.hero.title}
+          </h1>
+          <p class="lead hero__lead">{t.hero.lead}</p>
+          <div class="hero__actions">
+            <a class="btn btn--primary" href="#demo">
+              {t.hero.cta}
+            </a>
+            <a class="link" href="#day">
+              <span>{t.hero.secondary}</span>
+              <svg
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                aria-hidden="true"
+              >
+                <path d="M8 3v10M3.5 8.5 8 13l4.5-4.5"></path>
+              </svg>
+            </a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <h2 class="visually-hidden" id="day">
+      {t.day.title}
+    </h2>
+
+    <article class="step" data-step="orders" aria-labelledby="step-orders">
+      <div class="wrap">
+        <div class="step__card">
+          <h3 class="h3" id="step-orders">
+            {s.orders.title}
+          </h3>
+          <p class="step__body">{s.orders.body}</p>
+          <div class="ui ui-import" data-import>
+            <div class="ui-import__file">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="4" y="2.5" width="16" height="19" rx="3" fill="#1D6F42"></rect>
+                <path
+                  d="M8.5 8.5l7 7M15.5 8.5l-7 7"
+                  stroke="#fff"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                ></path>
+              </svg>
+              <span class="num">{s.orders.file}</span>
+              <span class="ui-import__from">Qumështorja Fusha</span>
+            </div>
+            <p class="ui__label">{s.orders.columns}</p>
+            <ul class="ui-import__map">
+              {s.orders.mapping.map(([from, to]) => (
+                <li data-map-row>
+                  <span class="ui-import__col">{from}</span>
+                  <svg class="ui-import__arrow" viewBox="0 0 40 10" aria-hidden="true">
+                    <path
+                      d="M1 5h36M33 1.5 37 5l-4 3.5"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.4"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  <span class="ui-import__field">{to}</span>
+                  <svg class="ui-import__ok" viewBox="0 0 16 16" aria-hidden="true">
+                    <path
+                      d="M3.5 8.5l3 3 6-7"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </li>
+              ))}
+            </ul>
+            <div class="ui-import__check" data-check>
+              <span class="pill" data-tone="delivered" data-ready>
+                {fill(s.orders.rowsReady, { n: 58 })}
+              </span>
+              <span class="pill" data-tone="late" data-fix>
+                {fill(s.orders.toFix, { n: 2 })}
+              </span>
+              <span class="ui-import__done" data-done>
+                {s.orders.imported}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="step" data-step="routes" aria-labelledby="step-routes">
+      <div class="wrap">
+        <div class="step__card">
+          <h3 class="h3" id="step-routes">
+            {s.routes.title}
+          </h3>
+          <p class="step__body">{s.routes.body}</p>
+          <div class="ui ui-builder" data-builder>
+            {builder.map((b) => (
+              <div class="ui-builder__col" style={`--c: var(--r${b.slot})`}>
+                <p class="route-badge">R{b.slot + 1}</p>
+                <p class="ui-builder__name">{b.name}</p>
+                <div class="ui-builder__meter">
+                  <span>{s.routes.weight}</span>
+                  <b class="num" data-over={b.kg > b.kgMax ? '' : undefined}>
+                    {num(b.kg)} / {num(b.kgMax)} kg
+                  </b>
+                </div>
+                <div class="bar" data-over={b.kg > b.kgMax ? '' : undefined}>
+                  <i data-fill style={`--p:${Math.min(1, b.kg / b.kgMax).toFixed(3)}`} />
+                </div>
+                <div class="ui-builder__meter">
+                  <span>{s.routes.pallets}</span>
+                  <b class="num">
+                    {num(b.pal)} / {b.palMax}
+                  </b>
+                </div>
+                <div class="bar">
+                  <i data-fill style={`--p:${(b.pal / b.palMax).toFixed(3)}`} />
+                </div>
+                <p class="ui-builder__foot num">
+                  <span>{fill(s.routes.stops, { n: b.stops })}</span>
+                  <span>{num(b.km)} km</span>
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="step" data-step="publish" aria-labelledby="step-publish">
+      <div class="wrap">
+        <div class="step__card">
+          <h3 class="h3" id="step-publish">
+            {s.publish.title}
+          </h3>
+          <p class="step__body">{s.publish.body}</p>
+          <div class="ui ui-publish" data-publish>
+            <div class="ui-publish__left">
+              <span class="btn btn--primary btn--small ui-publish__btn" data-publish-btn>
+                <svg
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M2 8.5 14 2l-3 12-3.5-4.5z"></path>
+                </svg>
+                {s.publish.button}
+              </span>
+              <p class="ui-publish__toast" data-toast>
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                  <circle cx="8" cy="8" r="7" fill="currentColor"></circle>
+                  <path
+                    d="M4.8 8.2l2.1 2.1 4.3-4.6"
+                    fill="none"
+                    stroke="var(--bg)"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  ></path>
+                </svg>
+                {s.publish.toast}
+              </p>
+            </div>
+            <div class="phone ui-publish__phone" style="--pw: 168px" aria-hidden="true">
+              <div class="phone__screen">
+                <div class="phone__island"></div>
+                <div class="mini" data-mini>
+                  <p class="mini__title">{s.publish.phoneTitle}</p>
+                  <p class="mini__progress num">{s.publish.phoneProgress}</p>
+                  <div class="bar">
+                    <i style="--p:0.02"></i>
+                  </div>
+                  <div class="mini__next">
+                    <p class="mini__label">{s.publish.phoneNext}</p>
+                    <p class="mini__stop">
+                      <b class="num">1</b> {r1.stops[0]!.name}
+                    </p>
+                  </div>
+                  <ul class="mini__list">
+                    {r1.stops.slice(1, 4).map((st, i) => (
+                      <li>
+                        <b class="num">{i + 2}</b> {st.name}
+                      </li>
+                    ))}
+                  </ul>
+                  <span class="mini__slab">{s.publish.phoneStart}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="step step--live" data-step="live" aria-labelledby="step-live">
+      <div class="wrap">
+        <div class="step__card">
+          <h3 class="h3" id="step-live">
+            {s.live.title}
+          </h3>
+          <p class="step__body">{s.live.body}</p>
+          <div class="ui ui-drawer" data-drawer style="--c: var(--r0)">
+            <div class="ui-drawer__head">
+              <span class="route-badge">R1</span>
+              <span class="ui-drawer__driver">{r1.driver}</span>
+              <span class="pill" data-tone="moving" data-drawer-status>
+                {t.board.signal.moving}
+              </span>
+            </div>
+            <p class="ui-drawer__next" data-drawer-next>
+              {fill(t.board.next, { n: 4, name: r1.stops[3]!.name })}
+            </p>
+            <dl class="ui-drawer__facts">
+              <div>
+                <dt>{t.board.speed}</dt>
+                <dd class="num" data-drawer-speed>
+                  {fill(t.board.kmh, { n: 34 })}
+                </dd>
+              </div>
+              <div>
+                <dt>{t.board.battery}</dt>
+                <dd class="num" data-drawer-battery>
+                  82%
+                </dd>
+              </div>
+              <div class="ui-drawer__heard">
+                <dt class="visually-hidden">{t.board.lastHeard.replace('{when}', '')}</dt>
+                <dd data-drawer-heard>{fill(t.board.lastHeard, { when: t.board.justNow })}</dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<style>
+  .stage {
+    position: relative;
+    isolation: isolate;
+  }
+  .stage__sticky {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    overflow: hidden;
+    z-index: 0;
+  }
+  .stage__map {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+  }
+  .stage__scrim {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      90deg,
+      rgb(14 26 23 / 0.94) 0%,
+      rgb(14 26 23 / 0.82) 26%,
+      rgb(14 26 23 / 0.35) 46%,
+      rgb(14 26 23 / 0) 60%
+    );
+  }
+  .stage__board {
+    position: absolute;
+    z-index: 3;
+    top: calc(var(--nav-h) + 20px);
+    right: var(--gutter);
+    width: 320px;
+    max-height: calc(100svh - var(--nav-h) - 84px);
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    mask-image: linear-gradient(180deg, #000 calc(100% - 28px), transparent);
+  }
+
+  .stage__instruments {
+    position: absolute;
+    z-index: 3;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    padding: 14px var(--gutter) 16px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-3);
+    pointer-events: none;
+  }
+  .inst--demo {
+    margin-right: auto;
+  }
+  .inst--clock {
+    display: inline-block;
+    color: var(--text);
+    font-weight: 650;
+    font-size: 0.8125rem;
+    transform-origin: right center;
+  }
+  .inst--scale {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .inst__bar {
+    display: block;
+    width: 60px;
+    height: 6px;
+    border: 1.5px solid var(--text-3);
+    border-top: 0;
+  }
+
+  .stage__flow {
+    position: relative;
+    z-index: 2;
+    margin-top: -100svh;
+    pointer-events: none;
+  }
+  .stage__flow :global(a),
+  .stage__flow .step__card,
+  .stage__flow .hero__copy {
+    pointer-events: auto;
+  }
+
+  /* ---------------------------------------------------------------- hero */
+  .hero {
+    min-height: 100svh;
+    display: flex;
+    align-items: center;
+    padding-top: var(--nav-h);
+    padding-bottom: 72px;
+  }
+  .hero__copy {
+    max-width: min(500px, 40vw);
+  }
+  .hero__title {
+    margin-bottom: 28px;
+    font-size: clamp(2.65rem, 1.2rem + 3.7vw, 4.85rem);
+  }
+  .hero__lead {
+    margin-bottom: 40px;
+    max-width: 25em;
+    font-size: clamp(1.0625rem, 0.95rem + 0.32vw, 1.25rem);
+  }
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 28px;
+  }
+
+  /* --------------------------------------------------------------- steps */
+  .step {
+    display: grid;
+    min-height: 165svh;
+    padding-top: 12svh;
+  }
+  .step--live {
+    min-height: 200svh;
+  }
+  .step__card {
+    position: sticky;
+    top: calc(var(--nav-h) + 4svh);
+    width: min(460px, 100%);
+    padding: 28px;
+    border-radius: var(--radius-lg);
+    background: color-mix(in oklab, var(--surface) 95%, transparent);
+    box-shadow:
+      0 0 0 1px var(--line) inset,
+      0 30px 80px -30px rgb(0 0 0 / 0.7);
+  }
+  .step__card .h3 {
+    margin-bottom: 12px;
+  }
+  .step__body {
+    color: var(--text-2);
+    font-size: 0.9688rem;
+    line-height: 1.55;
+  }
+
+  /* A fragment of the product inside a step card. */
+  /* The product fragment sits under a hairline, not in a second card. */
+  .ui {
+    margin-top: 22px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    font-size: 0.8125rem;
+  }
+  .ui__label {
+    margin: 14px 0 8px;
+    font-weight: 600;
+    color: var(--text-3);
+    font-size: 0.75rem;
+  }
+
+  .ui-import__file {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 560;
+  }
+  .ui-import__file svg {
+    width: 20px;
+    height: 20px;
+  }
+  .ui-import__from {
+    margin-left: auto;
+    color: var(--text-3);
+    font-weight: 500;
+  }
+  .ui-import__map {
+    display: grid;
+    gap: 6px;
+  }
+  .ui-import__map li {
+    display: grid;
+    grid-template-columns: 74px 40px 1fr 16px;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    background: var(--sunken);
+  }
+  .ui-import__col {
+    font-weight: 600;
+    color: var(--text-2);
+  }
+  .ui-import__arrow {
+    width: 40px;
+    color: var(--text-3);
+  }
+  .ui-import__ok {
+    width: 16px;
+    color: var(--primary);
+  }
+  .ui-import__check {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    min-height: 24px;
+  }
+  .ui-import__done {
+    position: absolute;
+    left: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: var(--primary);
+    opacity: 0;
+  }
+
+  .ui-builder {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .ui-builder__col {
+    display: grid;
+    gap: 6px;
+    align-content: start;
+    padding: 10px;
+    border-radius: 9px;
+    background: var(--sunken);
+    min-width: 0;
+  }
+  .ui-builder__name {
+    font-weight: 560;
+    font-size: 0.75rem;
+    color: var(--text-2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ui-builder__meter {
+    display: grid;
+    gap: 1px;
+    margin-top: 4px;
+    font-size: 0.6875rem;
+    line-height: 1.3;
+    color: var(--text-3);
+  }
+  .ui-builder__meter b {
+    font-weight: 620;
+    color: var(--text-2);
+    white-space: nowrap;
+  }
+  .ui-builder__meter [data-over] {
+    color: var(--st-warning);
+    font-weight: 650;
+  }
+  .ui-builder .bar[data-over] > i {
+    background: var(--st-warning);
+  }
+  .ui-builder__foot {
+    display: grid;
+    margin-top: 4px;
+    font-size: 0.6875rem;
+    color: var(--text-3);
+  }
+
+  .ui-publish {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 16px;
+    align-items: center;
+  }
+  .ui-publish__left {
+    display: grid;
+    gap: 14px;
+    justify-items: start;
+  }
+  .ui-publish__btn {
+    pointer-events: none;
+  }
+  .ui-publish__toast {
+    display: flex;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--sunken);
+    font-weight: 500;
+    line-height: 1.35;
+    color: var(--text);
+  }
+  .ui-publish__toast svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    margin-top: 1px;
+    color: var(--primary);
+  }
+  .ui-publish__phone {
+    box-shadow:
+      0 0 0 1.5px #2b3833 inset,
+      0 20px 40px -16px rgb(0 0 0 / 0.7);
+  }
+  .mini {
+    display: grid;
+    gap: 6px;
+    padding: 34px 11px 10px;
+    font-size: 8.5px;
+    height: 100%;
+    align-content: start;
+  }
+  .mini__title {
+    font-size: 17px;
+    font-weight: 750;
+    color: var(--primary);
+    letter-spacing: -0.02em;
+  }
+  .mini__progress {
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .mini .bar {
+    height: 4px;
+  }
+  .mini__next {
+    padding: 7px;
+    border-radius: 8px;
+    border: 1.2px solid var(--primary);
+    background: var(--surface);
+  }
+  .mini__label {
+    font-weight: 650;
+    color: var(--primary);
+  }
+  .mini__stop {
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .mini__list {
+    display: grid;
+    gap: 4px;
+  }
+  .mini__list li {
+    padding: 6px 7px;
+    border-radius: 7px;
+    background: var(--surface);
+    font-weight: 600;
+  }
+  .mini__list b,
+  .mini__stop b {
+    margin-right: 4px;
+  }
+  .mini__slab {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    bottom: 10px;
+    display: grid;
+    place-items: center;
+    height: 30px;
+    border-radius: 8px;
+    background: var(--primary);
+    color: var(--on-primary);
+    font-weight: 700;
+    font-size: 10px;
+  }
+
+  .ui-drawer {
+    display: grid;
+    gap: 12px;
+  }
+  .ui-drawer__head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .ui-drawer__driver {
+    flex: 1;
+    font-weight: 600;
+    font-size: 0.875rem;
+  }
+  .ui-drawer__next {
+    font-weight: 560;
+    color: var(--text-2);
+  }
+  .ui-drawer__facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    margin: 0;
+  }
+  .ui-drawer__facts div {
+    display: flex;
+    gap: 6px;
+  }
+  .ui-drawer__facts dt {
+    color: var(--text-3);
+  }
+  .ui-drawer__facts dd {
+    margin: 0;
+    font-weight: 600;
+  }
+  .ui-drawer__heard {
+    width: 100%;
+  }
+  .ui-drawer__heard dd {
+    font-weight: 500;
+    color: var(--text-3);
+  }
+
+  /* ---------------------------------------------------------- responsive */
+  @media (max-width: 1099px) {
+    .stage__board {
+      display: none;
+    }
+    .hero__copy {
+      max-width: 620px;
+    }
+    .hero__lead {
+      max-width: 30em;
+    }
+    .stage__scrim {
+      background: linear-gradient(
+        180deg,
+        rgb(14 26 23 / 0.95) 0%,
+        rgb(14 26 23 / 0.86) 42%,
+        rgb(14 26 23 / 0) 66%
+      );
+    }
+    .hero {
+      align-items: flex-start;
+      padding-top: calc(var(--nav-h) + 6svh);
+    }
+    .inst--coords,
+    .inst--lapse {
+      display: none;
+    }
+  }
+  @media (max-width: 699px) {
+    .step {
+      min-height: 150svh;
+      padding-top: 0;
+    }
+    .step--live {
+      min-height: 180svh;
+    }
+    .step .wrap {
+      display: grid;
+      align-content: end;
+      padding-bottom: 12px;
+    }
+    /* Docked like a sheet, opaque, above the instrument strip. */
+    .step__card {
+      top: auto;
+      bottom: 52px;
+      padding: 20px;
+      background: var(--surface);
+    }
+    .step__body {
+      font-size: 0.9375rem;
+    }
+    .ui-import,
+    .ui-builder {
+      display: none;
+    }
+    .ui-builder {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+    }
+    .ui-builder__col {
+      padding: 8px;
+    }
+    .ui-publish {
+      grid-template-columns: 1fr;
+    }
+    .ui-publish__phone {
+      display: none;
+    }
+    .stage__instruments {
+      gap: 14px;
+      padding-bottom: 12px;
+    }
+    .inst--scale {
+      display: none;
+    }
+  }
+</style>

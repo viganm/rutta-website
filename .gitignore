@@ -1,0 +1,6 @@
+node_modules/
+dist/
+# Astro's generated types and the map builder's download cache
+.astro/
+.cache/
+.DS_Store

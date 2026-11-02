@@ -1,0 +1,51 @@
+---
+import '../styles/global.css';
+import { copy, homePath, langs, type Lang } from '../i18n';
+import { SITE_ORIGIN } from '../site.config';
+import { tokenCss } from '../styles/tokens';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = copy[lang];
+const url = (l: Lang) => `${SITE_ORIGIN}${homePath(l)}`;
+// Files in public/ are served under the base path, like the pages.
+const favicon = `${homePath('sq')}favicon.svg`;
+---
+
+<!doctype html>
+<html lang={lang} class="night">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{t.meta.title}</title>
+    <meta name="description" content={t.meta.description} />
+    <meta name="theme-color" content="#0E1A17" />
+    <meta name="color-scheme" content="dark light" />
+    <link rel="icon" href={favicon} type="image/svg+xml" />
+    {SITE_ORIGIN && <link rel="canonical" href={url(lang)} />}
+    {langs.map((l) => (
+      <link rel="alternate" hreflang={l} href={url(l)} />
+    ))}
+    <link rel="alternate" hreflang="x-default" href={url('sq')} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={t.meta.title} />
+    <meta property="og:description" content={t.meta.description} />
+    <meta property="og:locale" content={lang === 'sq' ? 'sq_AL' : 'en_GB'} />
+    <style is:inline set:html={tokenCss} />
+    <script is:inline>
+      // Hide the hero copy until its entrance runs; never for more than 2.5 s.
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        document.documentElement.classList.add('js-intro');
+        setTimeout(() => document.documentElement.classList.remove('js-intro'), 2500);
+      }
+    </script>
+  </head>
+  <body>
+    <a class="skip" href="#main">
+      {t.skip}
+    </a>
+    <slot />
+  </body>
+</html>

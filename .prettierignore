@@ -1,0 +1,6 @@
+dist
+.astro
+.cache
+pnpm-lock.yaml
+# Generated map data
+src/data

@@ -1,0 +1,286 @@
+---
+/**
+ * The close: the day done on the paper map (every route driven, every stop
+ * decided) and the demo request. The form writes an email; nothing is sent
+ * from the page itself.
+ */
+import { copy, type Lang } from '../i18n';
+import { DEMO_EMAIL } from '../site.config';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = copy[lang].demo;
+---
+
+<section class="demo paper" id="demo" aria-labelledby="demo-title" data-demo>
+  <canvas class="demo__map" data-map aria-hidden="true"></canvas>
+  <div class="demo__fade" aria-hidden="true"></div>
+  <div class="map-inst demo__inst" aria-hidden="true">
+    <span class="num" data-inst-coords></span>
+    <span class="map-inst__scale">
+      <i data-inst-bar></i>
+      <span class="num" data-inst-scale></span>
+    </span>
+  </div>
+
+  <div class="wrap demo__inner">
+    <div class="demo__card">
+      <h2 class="h2" id="demo-title">
+        {t.title}
+      </h2>
+      <p class="lead">{t.body}</p>
+      <form class="form" data-form novalidate>
+        <div class="field">
+          <label for="f-name">{t.name}</label>
+          <input
+            id="f-name"
+            name="name"
+            autocomplete="name"
+            required
+            aria-describedby="f-name-err"
+          />
+          <p class="field__err" id="f-name-err" hidden>
+            {t.required}
+          </p>
+        </div>
+        <div class="field">
+          <label for="f-company">{t.company}</label>
+          <input
+            id="f-company"
+            name="company"
+            autocomplete="organization"
+            required
+            aria-describedby="f-company-err"
+          />
+          <p class="field__err" id="f-company-err" hidden>
+            {t.required}
+          </p>
+        </div>
+        <div class="field">
+          <label for="f-contact">{t.contact}</label>
+          <input
+            id="f-contact"
+            name="contact"
+            autocomplete="email"
+            required
+            aria-describedby="f-contact-err"
+          />
+          <p class="field__err" id="f-contact-err" hidden>
+            {t.required}
+          </p>
+        </div>
+        <div class="field">
+          <label for="f-fleet">{t.fleet}</label>
+          <div class="select">
+            <select id="f-fleet" name="fleet">
+              {t.fleetOptions.map((o) => (
+                <option>{o}</option>
+              ))}
+            </select>
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path
+                d="M4 6l4 4 4-4"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              ></path>
+            </svg>
+          </div>
+        </div>
+        <div class="field field--wide">
+          <label for="f-message">
+            {t.message} <span>({t.optional})</span>
+          </label>
+          <textarea id="f-message" name="message" rows="3"></textarea>
+        </div>
+        <input type="hidden" name="plan" />
+        <p class="form__plan" data-plan-note hidden></p>
+        <div class="form__end">
+          <button class="btn btn--primary" type="submit">
+            {t.submit}
+            <svg
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M3 8h10M9 4l4 4-4 4"></path>
+            </svg>
+          </button>
+          <p class="form__note" data-form-note>
+            {t.note}
+          </p>
+        </div>
+      </form>
+    </div>
+  </div>
+  <template data-copy set:html={JSON.stringify({ ...t, email: DEMO_EMAIL })} />
+</section>
+
+<style>
+  .demo {
+    position: relative;
+    min-height: max(880px, 100svh);
+    display: grid;
+    align-items: center;
+    padding-block: clamp(96px, 8vw, 160px);
+    overflow: hidden;
+  }
+  .demo__map {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+  }
+  .demo__fade {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(
+        90deg,
+        rgb(241 244 240 / 0.92) 0%,
+        rgb(241 244 240 / 0.5) 45%,
+        rgb(241 244 240 / 0) 70%
+      ),
+      linear-gradient(var(--bg), transparent 18%, transparent 82%, var(--bg));
+  }
+  .demo__inner {
+    position: relative;
+  }
+  .demo__inst {
+    right: var(--gutter);
+    bottom: 28px;
+  }
+  .demo__card {
+    width: min(560px, 100%);
+    padding: clamp(24px, 3vw, 40px);
+    border-radius: 22px;
+    background: var(--surface);
+    box-shadow:
+      0 0 0 1px var(--line) inset,
+      0 50px 100px -40px rgb(18 26 23 / 0.4);
+  }
+  .demo__card .h2 {
+    margin-bottom: 16px;
+  }
+  .form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 28px;
+  }
+  .field {
+    display: grid;
+    gap: 6px;
+    align-content: start;
+  }
+  .field--wide,
+  .form__end,
+  .form__plan {
+    grid-column: 1 / -1;
+  }
+  label {
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+  label span {
+    font-weight: 500;
+    color: var(--text-3);
+  }
+  input,
+  select,
+  textarea {
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 14px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--bg);
+    box-shadow: inset 0 0 0 1px var(--line-strong);
+    font-size: 1rem;
+    transition: box-shadow 0.16s var(--ease-out);
+    caret-color: var(--primary);
+  }
+  textarea {
+    resize: vertical;
+  }
+  input:hover,
+  select:hover,
+  textarea:hover {
+    box-shadow: inset 0 0 0 1px var(--text-2);
+  }
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: none;
+    box-shadow:
+      inset 0 0 0 1.5px var(--focus),
+      0 0 0 3px color-mix(in oklab, var(--focus) 22%, transparent);
+  }
+  input[aria-invalid='true'] {
+    box-shadow: inset 0 0 0 1.5px var(--st-failed);
+  }
+  .select {
+    position: relative;
+  }
+  select {
+    appearance: none;
+    padding-right: 36px;
+  }
+  .select svg {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    width: 16px;
+    height: 16px;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--text-3);
+  }
+  .field__err {
+    font-size: 0.8125rem;
+    font-weight: 560;
+    color: var(--st-failed);
+  }
+  .form__plan {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--primary);
+  }
+  .form__end {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 20px;
+    margin-top: 8px;
+  }
+  .form__note {
+    flex: 1;
+    min-width: 200px;
+    font-size: 0.8125rem;
+    color: var(--text-3);
+  }
+  @media (max-width: 899px) {
+    .demo {
+      align-items: end;
+      padding-top: 46svh;
+    }
+    .demo__fade {
+      background: linear-gradient(rgb(241 244 240 / 0) 30%, rgb(241 244 240 / 0.9) 55%, var(--bg));
+    }
+  }
+  @media (max-width: 519px) {
+    .form {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

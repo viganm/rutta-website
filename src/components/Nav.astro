@@ -1,0 +1,148 @@
+---
+import { copy, homePath, type Lang } from '../i18n';
+import Logo from './Logo.astro';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = copy[lang].nav;
+const other: Lang = lang === 'sq' ? 'en' : 'sq';
+---
+
+<header class="nav night" data-nav>
+  <div class="wrap nav__inner">
+    <a class="nav__home" href={homePath(lang)} aria-label="Rutta">
+      <Logo />
+    </a>
+    <nav class="nav__links" aria-label={t.label}>
+      <a href="#day">{t.day}</a>
+      <a href="#driver">{t.driver}</a>
+      <a href="#today">{t.today}</a>
+      <a href="#plans">{t.plans}</a>
+    </nav>
+    <div class="nav__end">
+      <div class="nav__lang" role="group" aria-label={t.language}>
+        <a
+          href={homePath('sq')}
+          hreflang="sq"
+          lang="sq"
+          aria-current={lang === 'sq' ? 'true' : undefined}
+        >
+          SQ
+        </a>
+        <a
+          href={homePath('en')}
+          hreflang="en"
+          lang="en"
+          aria-current={lang === 'en' ? 'true' : undefined}
+        >
+          EN
+        </a>
+      </div>
+      <a class="btn btn--primary btn--small" href="#demo">
+        {t.demo}
+      </a>
+    </div>
+  </div>
+  <link rel="alternate" hreflang={other} href={homePath(other)} />
+</header>
+
+<style>
+  .nav {
+    position: fixed;
+    z-index: 50;
+    inset: 0 0 auto;
+    height: var(--nav-h);
+    background: transparent;
+    transition:
+      background-color 0.4s var(--ease-out),
+      box-shadow 0.4s var(--ease-out),
+      color 0.4s var(--ease-out);
+  }
+  .nav[data-solid] {
+    background: color-mix(in oklab, var(--bg) 92%, transparent);
+    box-shadow: 0 1px 0 var(--line);
+  }
+  .nav__inner {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    height: 100%;
+  }
+  .nav__home {
+    display: inline-flex;
+    text-decoration: none;
+    border-radius: 8px;
+  }
+  .nav__links {
+    display: flex;
+    gap: 4px;
+    margin-left: 12px;
+  }
+  .nav__links a {
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.9375rem;
+    font-weight: 520;
+    color: var(--text-2);
+    text-decoration: none;
+    transition:
+      color 0.16s var(--ease-out),
+      background-color 0.16s var(--ease-out);
+  }
+  .nav__links a:hover {
+    color: var(--text);
+    background: color-mix(in oklab, var(--text) 6%, transparent);
+  }
+  .nav__end {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-left: auto;
+  }
+  .nav__lang {
+    display: flex;
+    padding: 3px;
+    border-radius: 10px;
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .nav__lang a {
+    display: grid;
+    place-items: center;
+    min-width: 36px;
+    height: 30px;
+    border-radius: 7px;
+    font-size: 0.8125rem;
+    font-weight: 620;
+    color: var(--text-3);
+    text-decoration: none;
+  }
+  .nav__lang a[aria-current] {
+    background: var(--sunken);
+    color: var(--text);
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .nav__lang a:not([aria-current]):hover {
+    color: var(--text);
+  }
+  @media (max-width: 979px) {
+    .nav__links {
+      display: none;
+    }
+  }
+  @media (max-width: 479px) {
+    .nav__inner {
+      gap: 12px;
+    }
+    .nav__end {
+      gap: 8px;
+    }
+    .nav__end .btn {
+      padding: 0 12px;
+    }
+    .nav :global(.logo__word) {
+      font-size: 1.2rem;
+    }
+  }
+</style>

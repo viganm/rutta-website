@@ -1,0 +1,278 @@
+---
+/**
+ * The pin is the address. On Prishtinë's real streets: the order sheet's
+ * approximate pin, a delivery recorded at the gate 140 m away, and the
+ * dispatcher dragging the pin there and marking it verified, as Dispatch's
+ * pin picker does. src/scripts/pin.ts plays it.
+ */
+import { copy, type Lang } from '../i18n';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = copy[lang].pin;
+const check =
+  '<path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+---
+
+<section class="pin paper section" aria-labelledby="pin-title" data-pin>
+  <div class="wrap pin__grid">
+    <div class="pin__copy">
+      <h2 class="h2" id="pin-title">
+        {t.title}
+      </h2>
+      <p class="lead">{t.body}</p>
+    </div>
+
+    <div class="pin__card">
+      <canvas data-map aria-hidden="true"></canvas>
+      <div class="map-inst pin__inst" aria-hidden="true">
+        <span class="num" data-inst-coords></span>
+        <span class="map-inst__scale">
+          <i data-inst-bar></i>
+          <span class="num" data-inst-scale></span>
+        </span>
+      </div>
+
+      <div class="pin__address" aria-hidden="true">
+        <p class="pin__shop">
+          Market Era · <span>Prishtinë</span>
+        </p>
+        <p class="pin__dir">
+          <svg viewBox="0 0 16 16">
+            <path
+              d="M8 14.5S3 10 3 6.6a5 5 0 1 1 10 0C13 10 8 14.5 8 14.5zM8 8.4a1.8 1.8 0 1 0 0-3.6 1.8 1.8 0 0 0 0 3.6z"
+              fill="currentColor"
+            ></path>
+          </svg>
+          <span>{t.address}</span>
+        </p>
+        <p class="pin__note">{t.addressNote}</p>
+      </div>
+
+      <span class="pin__tag pin__tag--approx" data-old-label aria-hidden="true">
+        {t.approximate}
+      </span>
+      <span class="pin__tag pin__tag--fix" data-fix-label aria-hidden="true">
+        <svg viewBox="0 0 16 16" set:html={check} />
+        <span class="num" data-delivered></span>
+      </span>
+      <span class="pin__tag pin__tag--verified" data-verified-label aria-hidden="true">
+        <svg viewBox="0 0 16 16" set:html={check} />
+        {t.verified}
+      </span>
+
+      <div class="pin__bar" data-bar aria-hidden="true">
+        <span class="pin__bar-name">Market Era</span>
+        <span class="pin__bar-label">{t.pinLabel}</span>
+        <span class="pill" data-tone="warning" data-status>
+          {t.approximate}
+        </span>
+        <span class="pin__btn" data-save>
+          {t.save}
+        </span>
+        <span class="pin__done" data-done>
+          <svg viewBox="0 0 16 16" set:html={check} />
+          <span>{t.saved}</span>
+          <span class="pin__help">{t.verifiedHelp}</span>
+        </span>
+      </div>
+    </div>
+  </div>
+  <template data-copy set:html={JSON.stringify({ delivered: t.delivered, verified: t.verified })} />
+</section>
+
+<style>
+  .pin {
+    padding-top: clamp(64px, 6vw, 120px);
+  }
+  .pin__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: clamp(40px, 6vw, 96px);
+    align-items: center;
+  }
+  .pin__copy {
+    display: grid;
+    gap: 24px;
+  }
+  .pin__card {
+    position: relative;
+    height: clamp(440px, 42vw, 580px);
+    border-radius: 22px;
+    overflow: hidden;
+    background: var(--bg);
+    box-shadow:
+      0 0 0 1px var(--line) inset,
+      0 40px 80px -40px rgb(18 26 23 / 0.35);
+  }
+  .pin__card canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+  }
+  .pin__inst {
+    top: 22px;
+    right: 18px;
+  }
+  .pin__address {
+    position: absolute;
+    left: 18px;
+    top: 18px;
+    max-width: 290px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow:
+      0 0 0 1px var(--line) inset,
+      0 12px 30px -16px rgb(18 26 23 / 0.35);
+    font-size: 0.875rem;
+  }
+  .pin__shop {
+    font-weight: 680;
+  }
+  .pin__shop span {
+    font-weight: 500;
+    color: var(--text-3);
+  }
+  .pin__dir {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin-top: 6px;
+    font-weight: 600;
+    font-size: 1rem;
+  }
+  .pin__dir svg {
+    width: 15px;
+    height: 15px;
+    color: var(--primary);
+    flex: none;
+  }
+  .pin__note {
+    margin-top: 2px;
+    font-size: 0.8125rem;
+    color: var(--text-3);
+  }
+
+  /* Tags that ride the map, positioned by pin.ts. */
+  .pin__tag {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 9px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 620;
+    white-space: nowrap;
+    will-change: transform;
+    box-shadow: 0 6px 16px -8px rgb(18 26 23 / 0.35);
+  }
+  .pin__tag svg {
+    width: 12px;
+    height: 12px;
+  }
+  .pin__tag--approx {
+    background: var(--st-warning-subtle);
+    color: var(--st-warning-on-subtle);
+  }
+  .pin__tag--fix {
+    background: var(--st-arrived-subtle);
+    color: var(--st-arrived-on-subtle);
+    opacity: 0;
+  }
+  .pin__tag--verified {
+    background: var(--st-delivered-subtle);
+    color: var(--st-delivered-on-subtle);
+    opacity: 0;
+  }
+
+  .pin__bar {
+    position: absolute;
+    left: 18px;
+    right: 18px;
+    bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 60px;
+    padding: 10px 10px 10px 16px;
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow:
+      0 0 0 1px var(--line) inset,
+      0 20px 40px -18px rgb(18 26 23 / 0.45);
+    font-size: 0.875rem;
+    font-weight: 560;
+    opacity: 0;
+  }
+  .pin__bar-name {
+    font-weight: 680;
+  }
+  .pin__bar-label {
+    margin-left: auto;
+    color: var(--text-3);
+  }
+  .pin__btn {
+    display: grid;
+    place-items: center;
+    height: 40px;
+    padding: 0 18px;
+    border-radius: 10px;
+    background: var(--primary);
+    color: var(--on-primary);
+    font-weight: 680;
+  }
+  .pin__done {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: center;
+    align-items: center;
+    gap: 2px 8px;
+    padding: 8px 18px;
+    border-radius: inherit;
+    background: var(--primary);
+    color: var(--on-primary);
+    font-weight: 620;
+    opacity: 0;
+  }
+  .pin__done svg {
+    width: 18px;
+    height: 18px;
+  }
+  .pin__help {
+    flex-basis: 100%;
+    padding-left: 26px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    opacity: 0.85;
+  }
+
+  @media (max-width: 639px) {
+    .pin__inst {
+      display: none;
+    }
+    .pin__bar-label {
+      display: none;
+    }
+    .pin__bar .pill {
+      margin-left: auto;
+    }
+  }
+  @media (max-width: 959px) {
+    .pin__grid {
+      grid-template-columns: 1fr;
+    }
+    .pin__card {
+      height: 520px;
+    }
+  }
+</style>

@@ -1,0 +1,58 @@
+---
+import type { Lang } from '../i18n';
+import Base from '../layouts/Base.astro';
+import Demo from './Demo.astro';
+import DriverApp from './DriverApp.astro';
+import Footer from './Footer.astro';
+import Local from './Local.astro';
+import Nav from './Nav.astro';
+import Pin from './Pin.astro';
+import Plans from './Plans.astro';
+import Reports from './Reports.astro';
+import Signal from './Signal.astro';
+import Stage from './Stage.astro';
+import Today from './Today.astro';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+---
+
+<Base lang={lang}>
+  <Nav lang={lang} />
+  <main id="main">
+    <Stage lang={lang} />
+    <DriverApp lang={lang} />
+    <Signal lang={lang} />
+    <Pin lang={lang} />
+    <Today lang={lang} />
+    <Reports lang={lang} />
+    <Local lang={lang} />
+    <Plans lang={lang} />
+    <Demo lang={lang} />
+  </main>
+  <Footer lang={lang} />
+</Base>
+
+<script>
+  import '../scripts/main.ts';
+</script>
+
+<style is:global>
+  .js-intro [data-hero-title],
+  .js-intro .hero__lead,
+  .js-intro .hero__actions,
+  .js-intro [data-hero-board] {
+    opacity: 0;
+  }
+  .line-mask {
+    display: block;
+    overflow: hidden;
+    padding-bottom: 0.1em;
+    margin-bottom: -0.1em;
+  }
+  .line {
+    display: block;
+  }
+</style>

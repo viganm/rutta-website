@@ -1,0 +1,56 @@
+---
+/** The Rutta mark (a route from the depot ring to a stop) and the wordmark. */
+interface Props {
+  label?: string;
+}
+const { label = 'Rutta' } = Astro.props;
+---
+
+<span class="logo" role="img" aria-label={label}>
+  <svg viewBox="0 0 32 32" aria-hidden="true">
+    <rect width="32" height="32" rx="9" class="logo__tile"></rect>
+    <path d="M9.5 22.5c0-5 3-6.5 6.5-6.5s6.5-1.5 6.5-6.5" class="logo__route"></path>
+    <circle cx="9.5" cy="22.5" r="3" class="logo__depot"></circle>
+    <circle cx="22.5" cy="9.5" r="3.2" class="logo__stop"></circle>
+  </svg>
+  <span class="logo__word" aria-hidden="true">
+    Rutta
+  </span>
+</span>
+
+<style>
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text);
+  }
+  svg {
+    width: 30px;
+    height: 30px;
+  }
+  .logo__tile {
+    fill: var(--primary);
+  }
+  .logo__route {
+    fill: none;
+    stroke: var(--on-primary);
+    stroke-width: 2.6;
+    stroke-linecap: round;
+    opacity: 0.85;
+  }
+  .logo__depot {
+    fill: var(--primary);
+    stroke: var(--on-primary);
+    stroke-width: 2;
+  }
+  .logo__stop {
+    fill: var(--on-primary);
+  }
+  .logo__word {
+    font-size: 1.375rem;
+    font-weight: 720;
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+</style>

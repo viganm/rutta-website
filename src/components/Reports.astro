@@ -1,0 +1,549 @@
+---
+/**
+ * The evening report, as Rutta Dispatch draws it: deliveries by day, why
+ * stops failed, cash per driver, planned against driven km, and the CSV.
+ * Demo data, generated here and labelled as such on the page.
+ */
+import { copy, type Lang } from '../i18n';
+import { routes } from '../scripts/sim';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = copy[lang].reports;
+const locale = lang === 'sq' ? 'sq-AL' : 'en-GB';
+const eur = new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR' });
+const km = new Intl.NumberFormat(locale, { maximumFractionDigits: 1, minimumFractionDigits: 1 });
+const pct = new Intl.NumberFormat(locale, { style: 'percent' });
+
+// Fourteen working days to 02.11.2026; Sundays the depot is closed.
+const days = Array.from({ length: 14 }, (_, i) => {
+  const d = new Date(Date.UTC(2026, 9, 20 + i));
+  const sunday = d.getUTCDay() === 0;
+  const delivered = sunday ? 0 : [54, 57, 49, 58, 41, 0, 55, 59, 52, 56, 60, 44, 0, 57][i]!;
+  const failed = sunday ? 0 : [3, 2, 4, 1, 2, 0, 5, 2, 3, 1, 3, 2, 0, 3][i]!;
+  const label = `${String(d.getUTCDate()).padStart(2, '0')}.${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+  return { label, delivered, failed, sunday };
+});
+const max = 70;
+const ticks = [0, 20, 40, 60];
+const onTime = 0.94;
+
+const reasons = t.reasonList.map((name, i) => ({ name, count: [14, 9, 6, 3][i]! }));
+const reasonMax = 14;
+
+const cash = [1284.5, 962, 1518.2, 0, 2106.8, 744.3, 1090]
+  .map((v, i) => ({ slot: i, driver: routes[i]!.data.driver, value: v }))
+  .filter((c) => c.value > 0);
+const cashMax = 2200;
+
+const kms = [0, 1, 2, 4, 5].map((i) => {
+  const planned = routes[i]!.data.km;
+  const driven = Math.round(planned * [1.07, 0.99, 1.08, 0, 1.03, 1.05][i]! * 10) / 10;
+  return { slot: i, planned, driven };
+});
+const kmMax = 260;
+const sep = lang === 'sq' ? ';' : ',';
+const dec = (n: number) => (lang === 'sq' ? n.toFixed(2).replace('.', ',') : n.toFixed(2));
+---
+
+<section class="reports paper section" aria-labelledby="reports-title" data-reports>
+  <div class="wrap">
+    <div class="section__head reports__head">
+      <h2 class="h2" id="reports-title">
+        {t.title}
+      </h2>
+      <p class="lead">{t.body}</p>
+    </div>
+
+    <div class="reports__grid">
+      <figure class="panel panel--wide">
+        <figcaption class="panel__head">
+          <span class="panel__title">{t.deliveries}</span>
+          <span class="panel__demo">{t.demo}</span>
+        </figcaption>
+        <div class="panel__meta">
+          <ul class="legend">
+            <li>
+              <i style="background: var(--st-delivered)"></i>
+              {t.delivered}
+            </li>
+            <li>
+              <i style="background: var(--st-failed)"></i>
+              {t.notDelivered}
+            </li>
+          </ul>
+          <p class="panel__figure">
+            <span>{t.onTime}</span> <b>{pct.format(onTime)}</b>
+          </p>
+        </div>
+        <div class="columns" data-columns>
+          <div class="columns__grid" aria-hidden="true">
+            {ticks.map((v) => (
+              <span style={`--y:${v / max}`}>
+                <b class="num">{v}</b>
+              </span>
+            ))}
+          </div>
+          <ol class="columns__bars">
+            {days.map((d) => (
+              <li
+                class="col"
+                data-tip={`${d.label} · ${d.delivered} / ${d.failed}`}
+                tabindex="0"
+                aria-label={`${d.label}: ${d.delivered}, ${d.failed}`}
+              >
+                <span class="col__stack" style={`--h:${(d.delivered + d.failed) / max}`}>
+                  {d.failed > 0 && <i class="col__failed" style={`flex:${d.failed}`} />}
+                  {d.delivered > 0 && <i class="col__done" style={`flex:${d.delivered}`} />}
+                </span>
+                <span class="col__label num" data-sunday={d.sunday ? '' : undefined}>
+                  {d.label}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </figure>
+
+      <figure class="panel">
+        <figcaption class="panel__head">
+          <span class="panel__title">{t.reasons}</span>
+          <span class="panel__demo">{t.demo}</span>
+        </figcaption>
+        <ul class="hbars">
+          {reasons.map((r) => (
+            <li data-tip={`${r.name} · ${r.count}`}>
+              <span class="hbars__name">{r.name}</span>
+              <span class="hbars__track">
+                <i style={`--w:${r.count / reasonMax}; --c: var(--text-3)`} />
+              </span>
+              <b class="num">{r.count}</b>
+            </li>
+          ))}
+        </ul>
+      </figure>
+
+      <figure class="panel">
+        <figcaption class="panel__head">
+          <span class="panel__title">{t.cash}</span>
+          <span class="panel__demo">{t.demo}</span>
+        </figcaption>
+        <ul class="hbars hbars--cash">
+          {cash.map((c) => (
+            <li data-tip={`R${c.slot + 1} ${c.driver} · ${eur.format(c.value)}`}>
+              <span class="hbars__name">
+                <span class="route-badge" style={`--c: var(--r${c.slot})`}>
+                  R{c.slot + 1}
+                </span>{' '}
+                {c.driver.split(' ')[0]}
+              </span>
+              <span class="hbars__track">
+                <i style={`--w:${c.value / cashMax}; --c: var(--r${c.slot})`} />
+              </span>
+              <b class="num">{eur.format(c.value)}</b>
+            </li>
+          ))}
+        </ul>
+      </figure>
+
+      <figure class="panel">
+        <figcaption class="panel__head">
+          <span class="panel__title">{t.km}</span>
+          <span class="panel__demo">{t.demo}</span>
+        </figcaption>
+        <ul class="legend">
+          <li>
+            <i style="background: var(--line-strong)"></i>
+            {t.planned}
+          </li>
+          <li>
+            <i style="background: var(--primary)"></i>
+            {t.driven}
+          </li>
+        </ul>
+        <ul class="pairs">
+          {kms.map((k) => (
+            <li
+              data-tip={`R${k.slot + 1} · ${t.planned} ${km.format(k.planned)} km · ${t.driven} ${km.format(k.driven)} km`}
+            >
+              <span class="route-badge" style={`--c: var(--r${k.slot})`}>
+                R{k.slot + 1}
+              </span>
+              <span class="pairs__bars">
+                <i class="pairs__planned" style={`--w:${k.planned / kmMax}`} />
+                <i class="pairs__driven" style={`--w:${k.driven / kmMax}`} />
+              </span>
+              <b class="num">{km.format(k.driven)}</b>
+            </li>
+          ))}
+        </ul>
+      </figure>
+
+      <figure class="panel panel--csv">
+        <figcaption class="panel__head">
+          <span class="panel__title">{t.csv}</span>
+          <span class="panel__file num">raporti_02.11.2026.csv</span>
+        </figcaption>
+        <div class="sheet" role="table" aria-label={t.csv}>
+          <div class="sheet__row sheet__row--head" role="row">
+            <span role="columnheader"></span>
+            <span role="columnheader">A</span>
+            <span role="columnheader">B</span>
+            <span role="columnheader">C</span>
+            <span role="columnheader">D</span>
+          </div>
+          {[
+            [
+              lang === 'sq' ? 'Data' : 'Date',
+              lang === 'sq' ? 'Shoferi' : 'Driver',
+              lang === 'sq' ? 'Ndalesa' : 'Stops',
+              lang === 'sq' ? 'Paratë (€)' : 'Cash (€)',
+            ],
+            ...cash
+              .slice(0, 4)
+              .map((c) => [
+                '02.11.2026',
+                routes[c.slot]!.data.driver,
+                String(routes[c.slot]!.data.stops.length),
+                dec(c.value),
+              ]),
+          ].map((row, i) => (
+            <div class="sheet__row" role="row">
+              <span class="sheet__n num">{i + 1}</span>
+              {row.map((cell, j) => (
+                <span
+                  role="cell"
+                  class:list={[j === 3 && i > 0 && 'num sheet__money', i === 0 && 'sheet__th']}
+                >
+                  {cell}
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+        <p class="panel__raw num" aria-hidden="true">
+          02.11.2026{sep}Arben Krasniqi{sep}9{sep}
+          {dec(1284.5)}
+        </p>
+        <p class="panel__note">{t.csvNote}</p>
+      </figure>
+    </div>
+  </div>
+  <div class="tip" data-tip-box role="status" aria-live="polite"></div>
+</section>
+
+<style>
+  .reports__head {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: end;
+    gap: 24px 64px;
+  }
+  .reports__grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 20px;
+  }
+  .panel {
+    grid-column: span 4;
+    display: grid;
+    align-content: start;
+    gap: 18px;
+    margin: 0;
+    padding: 24px;
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    box-shadow:
+      0 0 0 1px var(--line) inset,
+      0 1px 2px rgb(18 26 23 / 0.04);
+  }
+  .panel--wide {
+    grid-column: span 8;
+  }
+  .panel__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .panel__title {
+    font-weight: 650;
+    letter-spacing: -0.01em;
+  }
+  .panel__demo,
+  .panel__file {
+    font-size: 0.75rem;
+    font-weight: 560;
+    color: var(--text-3);
+    white-space: nowrap;
+  }
+  .panel__meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+  }
+  .panel__figure {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    color: var(--text-3);
+    font-size: 0.875rem;
+    font-weight: 560;
+  }
+  .panel__figure b {
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    font-size: 0.8125rem;
+    color: var(--text-2);
+  }
+  .legend li {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .legend i {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+  }
+
+  /* Columns: stacked delivered / not delivered, 2px surface gap between. */
+  .columns {
+    position: relative;
+    height: 240px;
+    padding-left: 30px;
+  }
+  .columns__grid span {
+    position: absolute;
+    left: 30px;
+    right: 0;
+    bottom: calc(26px + (100% - 26px) * var(--y));
+    border-top: 1px solid var(--line);
+  }
+  .columns__grid b {
+    position: absolute;
+    left: -30px;
+    top: -8px;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    color: var(--text-3);
+  }
+  .columns__bars {
+    position: absolute;
+    inset: 0 0 0 30px;
+    display: grid;
+    grid-template-columns: repeat(14, minmax(0, 1fr));
+  }
+  .col {
+    position: relative;
+    display: grid;
+    grid-template-rows: 1fr 26px;
+    justify-items: center;
+    outline-offset: -2px;
+    border-radius: 6px;
+  }
+  .col:hover,
+  .col:focus-visible {
+    background: color-mix(in oklab, var(--text) 4%, transparent);
+  }
+  .col__stack {
+    align-self: end;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: min(24px, 60%);
+    height: calc(var(--h) * 100%);
+    transform-origin: bottom;
+  }
+  .col__stack i {
+    display: block;
+    min-height: 2px;
+  }
+  .col__stack i:first-child {
+    border-radius: 4px 4px 0 0;
+  }
+  .col__done {
+    background: var(--st-delivered);
+  }
+  .col__failed {
+    background: var(--st-failed);
+  }
+  .col__label {
+    align-self: center;
+    font-size: 0.6875rem;
+    color: var(--text-3);
+  }
+  .col:nth-child(odd) .col__label {
+    visibility: hidden;
+  }
+
+  /* Horizontal bars, value at the tip. */
+  .hbars {
+    display: grid;
+    gap: 14px;
+  }
+  .hbars li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 12px;
+    align-items: center;
+    font-size: 0.875rem;
+  }
+  .hbars__name {
+    grid-column: 1 / -1;
+    color: var(--text-2);
+    font-weight: 520;
+  }
+  .hbars__track {
+    height: 10px;
+  }
+  .hbars__track i,
+  .pairs__bars i {
+    display: block;
+    height: 100%;
+    width: calc(var(--w) * 100%);
+    border-radius: 0 4px 4px 0;
+    background: var(--c);
+    transform-origin: left;
+  }
+  .hbars b,
+  .pairs b {
+    font-size: 0.8125rem;
+    font-weight: 650;
+  }
+  .hbars--cash .hbars__name {
+    display: flex;
+    gap: 8px;
+  }
+
+  .pairs {
+    display: grid;
+    gap: 14px;
+  }
+  .pairs li {
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+  }
+  .pairs .route-badge {
+    font-size: 0.8125rem;
+  }
+  .pairs__bars {
+    display: grid;
+    gap: 2px;
+  }
+  .pairs__bars i {
+    height: 8px;
+  }
+  .pairs__planned {
+    background: var(--line-strong) !important;
+  }
+  .pairs__driven {
+    background: var(--primary) !important;
+  }
+
+  /* The CSV, as Excel shows it. */
+  .sheet {
+    display: grid;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 0 0 1px var(--line) inset;
+    font-size: 0.75rem;
+  }
+  .sheet__row {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 0.9fr) minmax(0, 1.2fr);
+  }
+  .sheet__row > span {
+    padding: 6px 7px;
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  /* Only the driver's name may give way; numbers and headers stay whole. */
+  .sheet__row > span:nth-child(3) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .sheet__row--head > span,
+  .sheet__n {
+    background: var(--sunken);
+    color: var(--text-3);
+    text-align: center;
+    font-weight: 560;
+  }
+  .sheet__th {
+    font-weight: 650;
+  }
+  .sheet__money {
+    text-align: right;
+  }
+  .panel__raw {
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: var(--sunken);
+    font-size: 0.75rem;
+    color: var(--text-2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .panel__note {
+    font-size: 0.8125rem;
+    color: var(--text-3);
+    line-height: 1.5;
+  }
+
+  .tip {
+    position: fixed;
+    z-index: 60;
+    left: 0;
+    top: 0;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: #121a17;
+    color: #e7efea;
+    font-size: 0.8125rem;
+    font-weight: 560;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.12s var(--ease-out);
+  }
+  .tip[data-on] {
+    opacity: 1;
+  }
+
+  @media (max-width: 1099px) {
+    .panel,
+    .panel--wide {
+      grid-column: span 6;
+    }
+    .panel--wide {
+      grid-column: 1 / -1;
+    }
+  }
+  @media (max-width: 719px) {
+    .reports__head {
+      grid-template-columns: 1fr;
+    }
+    .panel,
+    .panel--wide {
+      grid-column: 1 / -1;
+      padding: 18px;
+    }
+    .columns {
+      height: 200px;
+    }
+  }
+</style>
