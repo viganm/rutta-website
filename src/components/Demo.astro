@@ -121,7 +121,12 @@ const t = copy[lang].demo;
       </form>
     </div>
   </div>
-  <template data-copy set:html={JSON.stringify({ ...t, email: DEMO_EMAIL })} />
+  <script
+    type="application/json"
+    is:inline
+    data-copy
+    set:html={JSON.stringify({ ...t, email: DEMO_EMAIL })}
+  />
 </section>
 
 <style>

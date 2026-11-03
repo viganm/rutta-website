@@ -90,7 +90,9 @@ const t = copy[lang].signal;
       </div>
     </div>
   </div>
-  <template
+  <script
+    type="application/json"
+    is:inline
     data-copy
     set:html={JSON.stringify({
       offline: t.offline,

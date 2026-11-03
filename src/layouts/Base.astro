@@ -23,6 +23,8 @@ const favicon = `${homePath('sq')}favicon.svg`;
     <meta name="description" content={t.meta.description} />
     <meta name="theme-color" content="#0E1A17" />
     <meta name="color-scheme" content="dark light" />
+    <!-- iOS would otherwise link loads, times and coordinates as phone numbers. -->
+    <meta name="format-detection" content="telephone=no" />
     <link rel="icon" href={favicon} type="image/svg+xml" />
     {SITE_ORIGIN && <link rel="canonical" href={url(lang)} />}
     {langs.map((l) => (

@@ -27,7 +27,7 @@ const ZONE: [number, number] = [at - 42, at + 46];
 const T = { arrive: 4.2, leave: 6.6, end: 10.4, loop: 12.6 };
 
 export function initSignal(root: HTMLElement, lang: 'sq' | 'en', reduced: boolean): void {
-  const c = JSON.parse(root.querySelector('template[data-copy]')!.innerHTML) as SignalCopy;
+  const c = JSON.parse(root.querySelector('script[data-copy]')!.textContent!) as SignalCopy;
   const canvas = root.querySelector<HTMLCanvasElement>('[data-map]')!;
   const tag = root.querySelector<HTMLElement>('[data-tag]')!;
   const tagText = root.querySelector<HTMLElement>('[data-tag-text]')!;

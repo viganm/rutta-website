@@ -15,7 +15,7 @@ const OLD = project(21.1714, 42.6547);
 const GATE = project(21.1693, 42.6534);
 
 export function initPin(root: HTMLElement, lang: 'sq' | 'en', reduced: boolean): void {
-  const c = JSON.parse(root.querySelector('template[data-copy]')!.innerHTML) as {
+  const c = JSON.parse(root.querySelector('script[data-copy]')!.textContent!) as {
     delivered: string;
     verified: string;
   };

@@ -80,7 +80,12 @@ const check =
       </div>
     </div>
   </div>
-  <template data-copy set:html={JSON.stringify({ delivered: t.delivered, verified: t.verified })} />
+  <script
+    type="application/json"
+    is:inline
+    data-copy
+    set:html={JSON.stringify({ delivered: t.delivered, verified: t.verified })}
+  />
 </section>
 
 <style>

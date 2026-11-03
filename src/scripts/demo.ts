@@ -13,7 +13,7 @@ import { failReason, routes } from './sim.ts';
 type DemoCopy = Copy['demo'] & { email: string };
 
 export function initDemo(root: HTMLElement, lang: 'sq' | 'en'): void {
-  const c = JSON.parse(root.querySelector('template[data-copy]')!.innerHTML) as DemoCopy;
+  const c = JSON.parse(root.querySelector('script[data-copy]')!.textContent!) as DemoCopy;
   initForm(root, c);
 
   const canvas = root.querySelector<HTMLCanvasElement>('[data-map]')!;

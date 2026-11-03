@@ -116,7 +116,7 @@ const icons = {
       </li>
     ))}
   </ol>
-  <template data-icons set:html={JSON.stringify(icons)} />
+  <script type="application/json" is:inline data-icons set:html={JSON.stringify(icons)} />
 </div>
 
 <style>

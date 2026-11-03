@@ -17,7 +17,7 @@ export function bindBoard(root: HTMLElement, c: Copy['board'], reduced: boolean)
   const list = root.querySelector<HTMLElement>('[data-rows]')!;
   const rows = new Map<number, HTMLElement>();
   list.querySelectorAll<HTMLElement>('.row').forEach((el) => rows.set(Number(el.dataset.slot), el));
-  const icons = JSON.parse(root.querySelector('template[data-icons]')!.innerHTML) as Record<
+  const icons = JSON.parse(root.querySelector('script[data-icons]')!.textContent!) as Record<
     string,
     string
   >;
